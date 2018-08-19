@@ -1,14 +1,11 @@
 package main
 
 import (
-	"fmt"
-	"log"
-
-	"os/exec"
-
 	"bytes"
-
+	"fmt"
 	"io"
+	"log"
+	"os/exec"
 
 	"github.com/lxn/walk"
 	. "github.com/lxn/walk/declarative"
@@ -48,27 +45,52 @@ func main() {
 	var (
 		pingTE     *walk.TextEdit
 		pingButton *walk.PushButton
+		pingCB     *walk.ComboBox
 	)
 
-	i, err := MainWindow{
+	setEnabled := func(enabled bool) {
+		pingTE.SetEnabled(enabled)
+		pingButton.SetEnabled(enabled)
+		pingCB.SetEnabled(enabled)
+	}
+
+	wnd := MainWindow{
 		Title:   "sandbox",
 		MinSize: Size{Width: 320, Height: 240},
 		Size:    Size{Width: 1024, Height: 800},
-		// Layout:  Grid{Rows: 3, Columns: 3},
-		Layout: VBox{},
+		Layout:  VBox{},
 		Children: []Widget{
 			Composite{
 				Layout: Grid{Columns: 2},
 				Children: []Widget{
+					Label{
+						Text:   "address",
+						Row:    0,
+						Column: 0,
+					},
+					ComboBox{
+						AssignTo: &pingCB,
+						Row:      0,
+						Column:   1,
+						Model: []string{
+							"8.8.8.8", "1.1.1.1", "127.0.0.1",
+						},
+					},
+
+					Label{
+						Text: "command",
+						Row:  1, Column: 0,
+					},
 					PushButton{
 						AssignTo: &pingButton,
-						Text:     "ping 8.8.8.8",
+						Text:     "ping",
 						OnClicked: func() {
-							pingButton.SetEnabled(false)
-							pingTE.SetText("ping実行中...")
+							setEnabled(false)
+							command := fmt.Sprint("ping ", pingCB.Text())
+							pingTE.SetText(fmt.Sprint("executing ", command))
 							go func() {
-								defer pingButton.SetEnabled(true)
-								output, err := exec.Command("cmd.exe", "/c", "ping 8.8.8.8").Output()
+								defer setEnabled(true)
+								output, err := exec.Command("cmd.exe", "/c", command).Output()
 								if err != nil {
 									pingTE.SetText(fmt.Sprint(err))
 									return
@@ -81,19 +103,20 @@ func main() {
 								pingTE.SetText(string(u8output))
 							}()
 						},
-						Row:    0,
-						Column: 0,
-					},
-					TextEdit{
-						AssignTo: &pingTE,
-						Row:      0,
-						Column:   1,
-						ReadOnly: true,
+						Row:    1,
+						Column: 1,
 					},
 				},
 			},
+			TextEdit{
+				AssignTo: &pingTE,
+				Row:      0,
+				Column:   1,
+				ReadOnly: true,
+			},
 		},
-	}.Run()
+	}
+	i, err := wnd.Run()
 	log.Println(i, err)
 
 }
