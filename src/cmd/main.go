@@ -93,6 +93,8 @@ func main() {
 							setEnabled(false)
 							command := fmt.Sprint("ping ", pingCB.Text())
 							Must(pingStatusTE.SetText(fmt.Sprint("executing ", command)))
+							Must(pingStdoutTE.SetText(""))
+							Must(pingStderrTE.SetText(""))
 							go func() {
 								defer setEnabled(true)
 								cmd := exec.Command("cmd.exe", "/c", command)
@@ -106,19 +108,17 @@ func main() {
 									return
 								}
 								go func() {
-									var txt string
 									s := bufio.NewScanner(stdoutR)
 									for s.Scan() {
-										txt += s.Text() + "\r\n"
-										Must(pingStdoutTE.SetText(txt))
+										log.Println(s.Text())
+										pingStdoutTE.AppendText(s.Text() + "\r\n")
 									}
 								}()
 								go func() {
-									var txt string
 									s := bufio.NewScanner(stderrR)
 									for s.Scan() {
-										txt += s.Text() + "\r\n"
-										Must(pingStderrTE.SetText(txt))
+										log.Println(s.Text())
+										pingStderrTE.AppendText(s.Text() + "\r\n")
 									}
 								}()
 								err = cmd.Wait()
