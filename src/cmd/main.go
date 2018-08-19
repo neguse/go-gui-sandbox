@@ -1,12 +1,11 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"log"
 	"os/exec"
-
-	"bufio"
 
 	"github.com/lxn/walk"
 	. "github.com/lxn/walk/declarative"
