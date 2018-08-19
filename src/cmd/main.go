@@ -52,7 +52,12 @@ func main() {
 		pingStdoutTE, pingStderrTE *walk.TextEdit
 		pingButton                 *walk.PushButton
 		pingCB                     *walk.ComboBox
+		pingIndex                  *int
 	)
+	{
+		i := 0
+		pingIndex = &i
+	}
 
 	setEnabled := func(enabled bool) {
 		pingButton.SetEnabled(enabled)
@@ -80,6 +85,7 @@ func main() {
 						Model: []string{
 							"8.8.8.8", "1.1.1.1", "127.0.0.1",
 						},
+						CurrentIndex: *pingIndex,
 					},
 
 					Label{
