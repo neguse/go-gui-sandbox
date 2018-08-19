@@ -110,14 +110,12 @@ func main() {
 								go func() {
 									s := bufio.NewScanner(stdoutR)
 									for s.Scan() {
-										log.Println(s.Text())
 										pingStdoutTE.AppendText(s.Text() + "\r\n")
 									}
 								}()
 								go func() {
 									s := bufio.NewScanner(stderrR)
 									for s.Scan() {
-										log.Println(s.Text())
 										pingStderrTE.AppendText(s.Text() + "\r\n")
 									}
 								}()
