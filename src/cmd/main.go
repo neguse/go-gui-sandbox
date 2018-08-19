@@ -138,10 +138,14 @@ func main() {
 			TextEdit{
 				AssignTo: &pingStdoutTE,
 				ReadOnly: true,
+				VScroll:  true,
+				HScroll:  true,
 			},
 			TextEdit{
 				AssignTo: &pingStderrTE,
 				ReadOnly: true,
+				VScroll:  true,
+				HScroll:  true,
 			},
 		},
 	}
