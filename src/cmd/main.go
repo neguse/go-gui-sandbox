@@ -48,12 +48,13 @@ func OutputConverter() (io.Reader, io.WriteCloser) {
 func main() {
 
 	var (
-		pingStatusTE               *walk.LineEdit
+		pingStatus                 *walk.StatusBarItem
 		pingStdoutTE, pingStderrTE *walk.TextEdit
 		pingButton                 *walk.PushButton
 		pingCB                     *walk.ComboBox
 		pingIndex                  *int
 	)
+
 	{
 		i := 0
 		pingIndex = &i
@@ -98,7 +99,7 @@ func main() {
 						OnClicked: func() {
 							setEnabled(false)
 							command := fmt.Sprint("ping ", pingCB.Text())
-							Must(pingStatusTE.SetText(fmt.Sprint("executing ", command)))
+							Must(pingStatus.SetText(fmt.Sprint("executing ", command)))
 							Must(pingStdoutTE.SetText(""))
 							Must(pingStderrTE.SetText(""))
 							go func() {
@@ -110,7 +111,7 @@ func main() {
 								cmd.Stderr = stderrW
 								err := cmd.Start()
 								if err != nil {
-									Must(pingStatusTE.SetText(fmt.Sprint(err)))
+									Must(pingStatus.SetText(fmt.Sprint(err)))
 									return
 								}
 								go func() {
@@ -127,19 +128,15 @@ func main() {
 								}()
 								err = cmd.Wait()
 								if err != nil {
-									Must(pingStatusTE.SetText(fmt.Sprint(err)))
+									Must(pingStatus.SetText(fmt.Sprint(err)))
 								}
-								Must(pingStatusTE.SetText("finished"))
+								Must(pingStatus.SetText("finished"))
 							}()
 						},
 						Row:    1,
 						Column: 1,
 					},
 				},
-			},
-			LineEdit{
-				AssignTo: &pingStatusTE,
-				ReadOnly: true,
 			},
 			TextEdit{
 				AssignTo: &pingStdoutTE,
@@ -152,6 +149,11 @@ func main() {
 				ReadOnly: true,
 				VScroll:  true,
 				HScroll:  true,
+			},
+		},
+		StatusBarItems: []StatusBarItem{
+			{
+				AssignTo: &pingStatus,
 			},
 		},
 	}
