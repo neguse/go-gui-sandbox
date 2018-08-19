@@ -48,6 +48,7 @@ func OutputConverter() (io.Reader, io.WriteCloser) {
 func main() {
 
 	var (
+		pingMainWindow             *walk.MainWindow
 		pingStatus                 *walk.StatusBarItem
 		pingStdoutTE, pingStderrTE *walk.TextEdit
 		pingButton                 *walk.PushButton
@@ -66,10 +67,11 @@ func main() {
 	}
 
 	wnd := MainWindow{
-		Title:   "sandbox",
-		MinSize: Size{Width: 320, Height: 240},
-		Size:    Size{Width: 1024, Height: 800},
-		Layout:  VBox{},
+		AssignTo: &pingMainWindow,
+		Title:    "sandbox",
+		MinSize:  Size{Width: 320, Height: 240},
+		Size:     Size{Width: 1024, Height: 800},
+		Layout:   VBox{},
 		Children: []Widget{
 			Composite{
 				Layout: Grid{Columns: 2},
@@ -98,12 +100,14 @@ func main() {
 						Text:     "ping",
 						OnClicked: func() {
 							setEnabled(false)
+							pingMainWindow.AsFormBase().ProgressIndicator().SetState(walk.PIIndeterminate)
 							command := fmt.Sprint("ping ", pingCB.Text())
 							Must(pingStatus.SetText(fmt.Sprint("executing ", command)))
 							Must(pingStdoutTE.SetText(""))
 							Must(pingStderrTE.SetText(""))
 							go func() {
 								defer setEnabled(true)
+								defer pingMainWindow.AsFormBase().ProgressIndicator().SetCompleted(100)
 								cmd := exec.Command("cmd.exe", "/c", command)
 								stdoutR, stdoutW := OutputConverter()
 								stderrR, stderrW := OutputConverter()
