@@ -1,11 +1,12 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"log"
 	"os/exec"
+
+	"bufio"
 
 	"github.com/lxn/walk"
 	. "github.com/lxn/walk/declarative"
@@ -30,26 +31,31 @@ import (
 // StatusBar
 // TableView
 
-func sjisToUtf8(sjis []byte) ([]byte, error) {
-	rd := transform.NewReader(bytes.NewReader(sjis), japanese.ShiftJIS.NewDecoder())
-	wr := bytes.NewBuffer([]byte{})
-	_, err := io.Copy(wr, rd)
+// Must treats unwanted error.
+// If error has occurred, Must will panic.
+func Must(err error) {
 	if err != nil {
-		return nil, err
+		log.Panic(err)
 	}
-	return wr.Bytes(), nil
+}
+
+// OutputConverter returns CP932 to UTF8 reader, and writer
+func OutputConverter() (io.Reader, io.WriteCloser) {
+	r, w := io.Pipe()
+	jr := transform.NewReader(r, japanese.ShiftJIS.NewDecoder())
+	return jr, w
 }
 
 func main() {
 
 	var (
-		pingTE     *walk.TextEdit
-		pingButton *walk.PushButton
-		pingCB     *walk.ComboBox
+		pingStatusTE               *walk.LineEdit
+		pingStdoutTE, pingStderrTE *walk.TextEdit
+		pingButton                 *walk.PushButton
+		pingCB                     *walk.ComboBox
 	)
 
 	setEnabled := func(enabled bool) {
-		pingTE.SetEnabled(enabled)
 		pingButton.SetEnabled(enabled)
 		pingCB.SetEnabled(enabled)
 	}
@@ -87,20 +93,40 @@ func main() {
 						OnClicked: func() {
 							setEnabled(false)
 							command := fmt.Sprint("ping ", pingCB.Text())
-							pingTE.SetText(fmt.Sprint("executing ", command))
+							Must(pingStatusTE.SetText(fmt.Sprint("executing ", command)))
 							go func() {
 								defer setEnabled(true)
-								output, err := exec.Command("cmd.exe", "/c", command).Output()
+								cmd := exec.Command("cmd.exe", "/c", command)
+								stdoutR, stdoutW := OutputConverter()
+								stderrR, stderrW := OutputConverter()
+								cmd.Stdout = stdoutW
+								cmd.Stderr = stderrW
+								err := cmd.Start()
 								if err != nil {
-									pingTE.SetText(fmt.Sprint(err))
+									Must(pingStatusTE.SetText(fmt.Sprint(err)))
 									return
 								}
-								u8output, err := sjisToUtf8(output)
+								go func() {
+									var txt string
+									s := bufio.NewScanner(stdoutR)
+									for s.Scan() {
+										txt += s.Text() + "\r\n"
+										Must(pingStdoutTE.SetText(txt))
+									}
+								}()
+								go func() {
+									var txt string
+									s := bufio.NewScanner(stderrR)
+									for s.Scan() {
+										txt += s.Text() + "\r\n"
+										Must(pingStderrTE.SetText(txt))
+									}
+								}()
+								err = cmd.Wait()
 								if err != nil {
-									pingTE.SetText(fmt.Sprint(err))
-									return
+									Must(pingStatusTE.SetText(fmt.Sprint(err)))
 								}
-								pingTE.SetText(string(u8output))
+								Must(pingStatusTE.SetText("finished"))
 							}()
 						},
 						Row:    1,
@@ -108,10 +134,16 @@ func main() {
 					},
 				},
 			},
+			LineEdit{
+				AssignTo: &pingStatusTE,
+				ReadOnly: true,
+			},
 			TextEdit{
-				AssignTo: &pingTE,
-				Row:      0,
-				Column:   1,
+				AssignTo: &pingStdoutTE,
+				ReadOnly: true,
+			},
+			TextEdit{
+				AssignTo: &pingStderrTE,
 				ReadOnly: true,
 			},
 		},
